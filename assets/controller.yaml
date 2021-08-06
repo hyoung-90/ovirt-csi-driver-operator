@@ -56,7 +56,7 @@ spec:
                 secretKeyRef:
                   name: ovirt-credentials
                   key: ovirt_ca_bundle
-          image: ${DRIVER_IMAGE}
+          image: quay.io/openshift/origin-ovirt-csi-driver:latest
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -71,7 +71,7 @@ spec:
               ovirt_cafile: ${OVIRT_CA_BUNDLE:+$OVIRT_CAFILE}
               ovirt_insecure: $OVIRT_INSECURE
               EOF
-              if [[ -n "$OVIRT_CA_BUNDLE" ]]; then echo "$OVIRT_CA_BUNDLE" > $OVIRT_CAFILE ; fi
+              if [[ -n "$OVIRT_CA_BUNDLE" ]]; then echo -e "$OVIRT_CA_BUNDLE" > $OVIRT_CAFILE ; fi
           volumeMounts:
             - name: config
               mountPath: /tmp/config
@@ -82,12 +82,12 @@ spec:
       containers:
         # Warning: the operator expects the first container to be the CSI driver
         - name: csi-driver
-          image: ${DRIVER_IMAGE}
+          image: quay.io/openshift/origin-ovirt-csi-driver:latest
           imagePullPolicy: IfNotPresent
           args:
             - --endpoint=$(CSI_ENDPOINT)
             - --logtostderr
-            - --v=${LOG_LEVEL}
+            - --v=5
           env:
             - name: CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
@@ -108,13 +108,13 @@ spec:
               memory: 50Mi
               cpu: 10m
         - name: csi-provisioner
-          image: ${PROVISIONER_IMAGE}
+          image: quay.io/openshift/origin-csi-external-provisioner:latest
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --default-fstype=ext4
             - --http-endpoint=localhost:8202
-            - --v=${LOG_LEVEL}
+            - --v=5
             - --timeout=180s
           env:
             - name: ADDRESS
@@ -128,33 +128,13 @@ spec:
               cpu: 10m
           # kube-rbac-proxy for external-provisioner container.
           # Provides https proxy for http-based external-provisioner metrics.
-        - name: provisioner-kube-rbac-proxy
-          args:
-          - --secure-listen-address=0.0.0.0:9202
-          - --upstream=http://127.0.0.1:8202/
-          - --tls-cert-file=/etc/tls/private/tls.crt
-          - --tls-private-key-file=/etc/tls/private/tls.key
-          - --logtostderr=true
-          image: ${KUBE_RBAC_PROXY_IMAGE}
-          imagePullPolicy: IfNotPresent
-          ports:
-          - containerPort: 9202
-            name: provisioner-m
-            protocol: TCP
-          resources:
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          volumeMounts:
-          - mountPath: /etc/tls/private
-            name: metrics-serving-cert
         - name: csi-attacher
-          image: ${ATTACHER_IMAGE}
+          image: quay.io/openshift/origin-csi-external-attacher:latest
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --http-endpoint=localhost:8203
-            - --v=${LOG_LEVEL}
+            - --v=5
             - --timeout=120s
           env:
             - name: ADDRESS
@@ -166,28 +146,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
-        - name: attacher-kube-rbac-proxy
-          args:
-          - --secure-listen-address=0.0.0.0:9203
-          - --upstream=http://127.0.0.1:8203/
-          - --tls-cert-file=/etc/tls/private/tls.crt
-          - --tls-private-key-file=/etc/tls/private/tls.key
-          - --logtostderr=true
-          image: ${KUBE_RBAC_PROXY_IMAGE}
-          imagePullPolicy: IfNotPresent
-          ports:
-          - containerPort: 9203
-            name: attacher-m
-            protocol: TCP
-          resources:
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          volumeMounts:
-          - mountPath: /etc/tls/private
-            name: metrics-serving-cert
         - name: csi-liveness-probe
-          image: ${LIVENESS_PROBE_IMAGE}
+          image: quay.io/openshift/origin-csi-livenessprobe:latest
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
@@ -201,11 +161,11 @@ spec:
               memory: 50Mi
               cpu: 10m
         - name: csi-resizer
-          image: ${RESIZER_IMAGE}
+          image: quay.io/openshift/origin-csi-external-resizer:latest
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
-            - --v=${LOG_LEVEL}
+            - --v=5
             - --timeout=120s
           env:
             - name: ADDRESS

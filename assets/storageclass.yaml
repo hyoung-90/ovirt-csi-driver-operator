@@ -4,9 +4,8 @@ metadata:
   name: ovirt-csi-sc
 parameters:
   # the name of the oVirt storage domain. "nfs" is just an example.
-  storageDomainName: "nfs"
+  storageDomainName: "ceph"
   thinProvisioning: "true"
 provisioner: csi.ovirt.org
 reclaimPolicy: "Delete"
-volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true

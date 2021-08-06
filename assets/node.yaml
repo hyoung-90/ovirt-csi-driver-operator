@@ -53,7 +53,7 @@ spec:
                 secretKeyRef:
                   name: ovirt-credentials
                   key: ovirt_ca_bundle
-          image: ${DRIVER_IMAGE}
+          image: quay.io/openshift/origin-ovirt-csi-driver:latest
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -68,7 +68,7 @@ spec:
               ovirt_cafile: ${OVIRT_CA_BUNDLE:+$OVIRT_CAFILE}
               ovirt_insecure: $OVIRT_INSECURE
               EOF
-              if [[ -n "$OVIRT_CA_BUNDLE" ]]; then echo "$OVIRT_CA_BUNDLE" > $OVIRT_CAFILE ; fi
+              if [[ -n "$OVIRT_CA_BUNDLE" ]]; then echo -e "$OVIRT_CA_BUNDLE" > $OVIRT_CAFILE ; fi
           volumeMounts:
             - name: config
               mountPath: /tmp/config
@@ -80,12 +80,12 @@ spec:
         - name: csi-driver
           securityContext:
             privileged: true
-          image: ${DRIVER_IMAGE}
+          image: quay.io/openshift/origin-ovirt-csi-driver:latest
           imagePullPolicy: IfNotPresent
           args:
             - --endpoint=$(CSI_ENDPOINT)
             - --logtostderr
-            - --v=${LOG_LEVEL}
+            - --v=5
             - --node-name=$(KUBE_NODE_NAME)
           env:
             - name: CSI_ENDPOINT
@@ -129,12 +129,12 @@ spec:
         - name: csi-node-driver-registrar
           securityContext:
             privileged: true
-          image: ${NODE_DRIVER_REGISTRAR_IMAGE}
+          image: quay.io/openshift/origin-csi-node-driver-registrar:4.5.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
-            - --v=${LOG_LEVEL}
+            - --v=5
           lifecycle:
             preStop:
               exec:
@@ -154,7 +154,7 @@ spec:
               memory: 20Mi
               cpu: 5m
         - name: csi-liveness-probe
-          image: ${LIVENESS_PROBE_IMAGE}
+          image: quay.io/openshift/origin-csi-livenessprobe:4.5.0
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
